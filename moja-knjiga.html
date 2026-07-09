@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="sr-Cyrl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Предсједников асистент</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap');
+:root{--bg:#deeef8;--surf:#d4e8f5;--card:rgba(40,112,192,.08);--brd:#c8deee;--a1:#2870c0;--a2:#1a4878;--grn:#186040;--red:#c0392b;--txt:#101830;--sub:#486078;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+
+/* ── ROTATE SCREEN ── */
+.rotate-screen{display:flex;position:fixed;inset:0;z-index:999;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:30px;text-align:center}
+.rot-icon{font-size:72px;color:var(--a1);animation:rotpulse 2.5s ease-in-out infinite}
+@keyframes rotpulse{0%,100%{transform:rotate(0deg);opacity:.7}50%{transform:rotate(-90deg);opacity:1}}
+.rot-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--a2);line-height:1.4}
+.rot-sub{font-size:14px;color:var(--sub);line-height:1.6;max-width:280px}
+
+/* ── APP LAYOUT (landscape only) ── */
+.app-layout{display:none;height:100dvh;overflow:hidden}
+@media(orientation:landscape){
+  .rotate-screen{display:none}
+  .app-layout{display:flex;flex-direction:row}
+}
+
+/* ── LEFT PANEL ── */
+.split-left{width:42%;max-width:380px;min-width:260px;flex-shrink:0;display:flex;flex-direction:column;height:100dvh;position:relative;overflow:hidden;border-right:1px solid var(--brd);background:#deeef8}
+.split-left::before{content:'';position:absolute;top:-30%;left:-20%;width:80%;height:60%;background:radial-gradient(ellipse,rgba(40,112,192,.12) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* ── HEADER ── */
+.hdr{position:relative;z-index:2;background:#d4e8f5;border-bottom:1px solid var(--brd);padding:10px 12px;flex-shrink:0}
+.hdr-title{font-family:'Playfair Display',serif;font-size:11.5px;line-height:1.35;color:var(--a2);margin-bottom:5px}
+.hdr-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:500}
+.pill-stats{background:var(--card);border:1px solid var(--brd);color:var(--sub)}
+.pill-stats b{color:var(--a2)}
+.pill-drive{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.28);color:var(--grn)}
+.pill-drive.sy{background:rgba(245,200,66,.1);border-color:rgba(245,200,66,.3);color:#f5c842}
+.pill-drive.er{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red)}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.pill-drive.sy .dot{animation:bl .9s ease-in-out infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.hdr-row2{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.fs-grp{display:flex;gap:4px}
+.fs-btn{background:rgba(40,112,192,.1);border:1px solid var(--brd);border-radius:7px;padding:3px 8px;cursor:pointer;line-height:1;transition:.15s;font-weight:700;color:var(--txt)}
+.fs-btn:active{background:rgba(40,112,192,.25)}
+.fs-minus{font-size:11px;color:var(--sub)}
+.fs-plus{font-size:13px}
+.icon-btn{background:rgba(40,112,192,.1);border:1px solid var(--brd);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:.15s}
+.icon-btn:active{background:rgba(40,112,192,.25)}
+
+/* ── LEFT INNER ── */
+.left-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;position:relative;z-index:1}
+.li-logo{font-size:32px;color:rgba(40,112,192,.4);line-height:1}
+.li-cursor-card{background:rgba(40,112,192,.1);border:1px solid rgba(40,112,192,.2);border-radius:12px;padding:10px 14px;text-align:center;width:100%}
+.li-cursor-label{font-size:10px;color:var(--sub);margin-bottom:3px}
+.li-cursor-val{font-size:13px;color:var(--a2);font-weight:600}
+.li-hint{font-size:10.5px;color:rgba(139,136,168,.45);text-align:center;line-height:1.6}
+
+/* ── BOTTOM BAR ── */
+.bot-bar{background:#cee5f3;border-top:1px solid var(--brd);padding:7px 8px 8px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:5px;flex-shrink:0;position:relative;z-index:2}
+.bbt{border:none;border-radius:12px;padding:10px 5px 8px;font-family:'Inter',sans-serif;font-size:10px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:transform .15s;user-select:none;letter-spacing:.2px}
+.bbt:active{transform:scale(.92)}
+.bbt .bi{font-size:19px}
+.bbt-dik{background:#2870c0;color:#fff;box-shadow:0 4px 18px rgba(40,112,192,.35)}
+.bbt-dik.rec{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 18px rgba(239,68,68,.35)}
+.bbt-ai{background:#bcd8f0;border:1px solid #88b8e0;color:#1a4070}
+.bbt-tts{background:#c0ecd8;border:1px solid #80c8a0;color:#186040}
+.bbt-more{background:#ccdcea;border:1px solid #b0ccd8;color:#486078}
+
+/* ── DOC RIGHT PANEL ── */
+.doc-wrap{flex:1;height:100dvh;overflow-y:auto;overflow-x:hidden;padding:16px;background:#ffffff;position:relative}
+.doc-wrap::before{content:'';position:fixed;bottom:-20%;right:-10%;width:50%;height:50%;background:radial-gradient(ellipse,rgba(40,112,192,.04) 0%,transparent 70%);pointer-events:none}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(40,112,192,.25);border-radius:3px}
+.doc-empty{text-align:center;padding:4rem 1rem;color:rgba(139,136,168,.3);font-style:italic;line-height:1.8}
+#docView{font-family:'Playfair Display',serif;line-height:1.85;color:var(--txt);white-space:pre-wrap;word-break:break-word;cursor:text;padding-bottom:40px;position:relative}
+.tts-cursor{display:inline;color:var(--a1);font-weight:900;animation:blink-cur 1.1s ease-in-out infinite;font-style:normal;font-size:1.1em;line-height:1;vertical-align:text-bottom;user-select:none}
+@keyframes blink-cur{0%,100%{opacity:1}50%{opacity:0}}
+.tts-cursor-line{position:absolute;top:0;left:0;right:0;height:1.5px;background:rgba(40,112,192,.4);pointer-events:none}
+
+/* ── OVERLAY ── */
+.overlay{display:none;position:absolute;inset:0;background:rgba(40,112,192,.18);z-index:20;backdrop-filter:blur(3px)}
+.overlay.on{display:block}
+
+/* ── DRAWERS ── */
+.drawer{position:absolute;bottom:0;left:0;right:0;z-index:30;background:#d4e8f5;border-top:2px solid var(--a1);border-radius:20px 20px 0 0;padding:0 14px 14px;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-height:82%;overflow-y:auto}
+.drawer.on{transform:translateY(0);transition:transform .3s cubic-bezier(.33,1,.68,1)}
+.drawer-handle{width:32px;height:4px;background:rgba(40,112,192,.2);border-radius:2px;margin:9px auto 12px}
+.drawer-title{font-size:13px;font-weight:600;color:var(--a2);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* Dictation */
+.mic-wrap{position:relative;width:72px;height:72px;margin:0 auto 8px}
+.mic-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(40,112,192,.3)}
+.mic-ring.r2{inset:-9px;border-color:rgba(40,112,192,.15)}
+.mic-wrap.rec .mic-ring{animation:rip 1.4s ease-out infinite}
+.mic-wrap.rec .mic-ring.r2{animation:rip 1.4s ease-out .3s infinite}
+@keyframes rip{0%{transform:scale(1);opacity:1}100%{transform:scale(1.5);opacity:0}}
+.mic-btn{position:relative;z-index:2;width:72px;height:72px;border-radius:50%;border:none;background:linear-gradient(145deg,#2870c0,#3a90e0);color:#fff;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 20px rgba(40,112,192,.4);transition:.2s}
+.mic-btn.rec{background:linear-gradient(145deg,#ef4444,#dc2626);box-shadow:0 5px 20px rgba(239,68,68,.45)}
+.mic-status{text-align:center;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:10px}
+.mic-status.rec{color:var(--red)}
+.trans-box{background:rgba(255,255,255,.7);border:1px solid rgba(40,112,192,.3);border-radius:11px;padding:11px 13px;min-height:65px;max-height:110px;overflow-y:auto;font-size:15px;line-height:1.7;color:var(--txt);margin-bottom:11px;word-break:break-word}
+.trans-box.empty{color:rgba(72,96,120,.4);font-style:italic}
+.draw-acts{display:grid;grid-template-columns:1.3fr 1fr;gap:7px;margin-bottom:7px}
+.dbtn{border:none;border-radius:11px;padding:12px 8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:.15s;user-select:none}
+.dbtn:active{transform:scale(.95)}
+.dbtn-save{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.28)}
+.dbtn-del{background:rgba(40,112,192,.08);border:1px solid var(--brd);color:var(--sub)}
+.dbtn-note{background:rgba(245,200,66,.09);border:1px solid rgba(245,200,66,.22);color:#f5c842;width:100%;border-radius:11px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s}
+.dbtn-note:active{background:rgba(245,200,66,.18)}
+
+/* AI */
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.ai-opt{background:rgba(40,112,192,.1);color:var(--a2);border:1px solid rgba(40,112,192,.26);border-radius:12px;padding:12px 7px;font-size:11.5px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.18s;user-select:none}
+.ai-opt .ai-ic{font-size:18px}
+.ai-opt:active{background:rgba(40,112,192,.23);transform:scale(.95)}
+.ai-load{display:none;align-items:center;justify-content:center;gap:8px;padding:14px;font-size:13px;color:var(--sub)}
+.ai-load.on{display:flex}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+.ai-res{display:none;background:rgba(40,112,192,.07);border:1px solid rgba(40,112,192,.2);border-radius:11px;padding:13px;font-size:15px;line-height:1.75;margin-bottom:11px}
+.ai-res.on{display:block}
+.ai-acts{display:none;grid-template-columns:1fr 1fr;gap:7px}
+.ai-acts.on{display:grid}
+.dbtn-acc{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 4px 13px rgba(34,197,94,.25)}
+
+/* TTS */
+.tts-opts{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+.tts-opt{background:rgba(255,255,255,.6);border:1px solid var(--brd);border-radius:11px;padding:12px 13px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:9px;color:var(--txt);transition:.15s;user-select:none}
+.tts-opt.sel{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.32);color:var(--grn)}
+.tts-opt .t-ic{font-size:17px;width:20px;text-align:center}
+.tts-play{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;border-radius:11px;padding:13px;width:100%;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 4px 14px rgba(34,197,94,.28);transition:.15s}
+.tts-play:active{transform:scale(.97)}
+.tts-stop-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(206,229,243,.97);border-top:1px solid var(--brd);backdrop-filter:blur(20px);padding:11px 16px;justify-content:space-between;align-items:center}
+.tts-stop-bar.on{display:flex}
+.tts-info{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--sub)}
+.tts-dot{width:8px;height:8px;border-radius:50%;background:var(--grn);animation:bl .9s ease-in-out infinite}
+.tts-stop-btn{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.28);color:var(--red);padding:7px 16px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+
+/* More */
+.more-list{display:flex;flex-direction:column;gap:5px}
+.more-item{background:rgba(255,255,255,.5);border:1px solid var(--brd);border-radius:11px;padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:11px;color:var(--txt);transition:.15s}
+.more-item:active{background:rgba(40,112,192,.14)}
+.more-item .m-ic{font-size:19px;width:22px;text-align:center}
+
+/* Settings modal */
+.modal-ov{display:none;position:fixed;inset:0;z-index:40;background:rgba(26,72,120,.5);backdrop-filter:blur(6px);flex-direction:column}
+.modal-ov.on{display:flex}
+.modal-box{background:#d4e8f5;border:1px solid var(--brd);border-radius:22px 22px 0 0;flex:1;margin-top:50px;display:flex;flex-direction:column;overflow:hidden}
+.modal-hdr{padding:15px 18px 11px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd);flex-shrink:0}
+.modal-hdr h2{font-family:'Playfair Display',serif;font-size:19px;color:var(--a2)}
+.modal-body{flex:1;overflow-y:auto;padding:16px}
+.s-sec{font-size:10px;text-transform:uppercase;letter-spacing:1.4px;color:var(--sub);margin-bottom:7px}
+.s-desc{font-size:12.5px;color:var(--sub);line-height:1.6;margin-bottom:10px}
+.s-link{color:var(--a1);text-decoration:none;border-bottom:1px solid rgba(40,112,192,.3)}
+.s-inp{width:100%;padding:12px 13px;font-size:12.5px;background:rgba(255,255,255,.7);border:1px solid var(--brd);border-radius:11px;color:var(--txt);font-family:monospace;margin-bottom:10px;outline:none;transition:.2s}
+.s-inp:focus{border-color:var(--a1)}
+.divider{border:none;border-top:1px solid var(--brd);margin:16px 0}
+.cfg-ok{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.26);border-radius:9px;padding:9px 13px;font-size:12px;color:var(--grn);margin-bottom:12px;line-height:1.5}
+.cfg-warn{background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.23);border-radius:9px;padding:9px 13px;font-size:12px;color:#f5c842;margin-bottom:12px;line-height:1.5}
+.btn-full{width:100%;border:none;border-radius:12px;padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s;margin-bottom:7px}
+.btn-full:active{transform:scale(.97)}
+.btn-purple{background:linear-gradient(135deg,#2870c0,#3a90e0);color:#fff;box-shadow:0 4px 16px rgba(40,112,192,.32)}
+.btn-subtle{background:rgba(40,112,192,.1);border:1px solid var(--brd);color:var(--sub)}
+.cl-btn{background:rgba(40,112,192,.1);border:1px solid var(--brd);color:var(--sub);width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cl-btn:active{background:rgba(239,68,68,.14);color:var(--red)}
+
+/* Toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:rgba(212,232,245,.97);border:1px solid var(--brd);color:var(--txt);padding:9px 18px;border-radius:24px;font-size:13.5px;font-weight:500;z-index:100;opacity:0;pointer-events:none;transition:.22s;white-space:nowrap;backdrop-filter:blur(20px);box-shadow:0 4px 18px rgba(40,112,192,.2)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ══ АИ ОВЕРЛЕЈ ══ */
+.ai-ov{display:none;position:fixed;inset:0;z-index:60;background:#deeef8;flex-direction:column}
+.ai-ov.on{display:flex}
+.ai-ov-hdr{background:#d4e8f5;border-bottom:1px solid var(--brd);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.ai-ov-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--a2)}
+.ai-ov-step{display:none;flex:1;flex-direction:column;overflow:hidden;padding:14px 16px}
+.ai-ov-step.on{display:flex}
+.ai-ov-hint{font-size:13px;color:var(--sub);margin-bottom:12px;line-height:1.5;text-align:center;flex-shrink:0}
+.ai-ov-selwrap{flex:1;overflow-y:auto;background:#fff;border:1px solid var(--brd);border-radius:12px;padding:14px}
+.ai-ov-doc{font-family:'Playfair Display',serif;line-height:1.85;color:var(--txt);white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text}
+.ai-ov-foot{flex-shrink:0;padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.ai-confirm-btn{border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:#2870c0;color:#fff;box-shadow:0 4px 14px rgba(40,112,192,.3);transition:.15s}
+.ai-confirm-btn:disabled{background:#b0ccd8;color:#fff;box-shadow:none;cursor:not-allowed}
+.ai-confirm-btn:not(:disabled):active{transform:scale(.97)}
+.ai-ov-sel-preview{background:rgba(40,112,192,.08);border:1px solid rgba(40,112,192,.2);border-radius:11px;padding:12px;margin-bottom:14px;flex-shrink:0}
+.ai-ov-sel-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--sub);margin-bottom:6px}
+.ai-ov-sel-text{font-family:'Playfair Display',serif;font-size:14px;line-height:1.7;color:var(--txt);max-height:90px;overflow-y:auto}
+.ai-question{font-family:'Playfair Display',serif;font-size:16px;color:var(--a2);line-height:1.5;margin-bottom:14px;text-align:center;flex-shrink:0}
+.ai-cmd-trans{background:rgba(255,255,255,.7);border:1px solid var(--brd);border-radius:11px;padding:13px;flex:1;font-size:15px;line-height:1.7;color:var(--sub);margin-bottom:12px;font-style:italic;overflow-y:auto}
+.ai-cmd-trans.active{color:var(--txt);font-style:normal}
+.ai-mic-btn-big{border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(145deg,#2870c0,#3a90e0);color:#fff;box-shadow:0 4px 14px rgba(40,112,192,.3);transition:.15s}
+.ai-mic-btn-big.rec{background:linear-gradient(145deg,#ef4444,#dc2626);box-shadow:0 4px 14px rgba(239,68,68,.3)}
+.ai-mic-btn-big:active{transform:scale(.97)}
+.ai-send-btn{display:none;border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.28)}
+.ai-send-btn:active{transform:scale(.97)}
+.ai-ov-loading{display:none;align-items:center;justify-content:center;gap:10px;padding:40px;font-size:15px;color:var(--sub)}
+.ai-ov-loading.on{display:flex}
+#aiResWrap{display:none;flex:1;display:none;flex-direction:column;overflow:hidden}
+#aiResWrap.on{display:flex}
+.ai-result-box{background:rgba(255,255,255,.8);border:1px solid rgba(40,112,192,.2);border-radius:11px;padding:14px;font-family:'Playfair Display',serif;font-size:15px;line-height:1.8;color:var(--txt);flex:1;overflow-y:auto;margin-bottom:14px}
+.ai-res-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0}
+.ai-accept-btn{border:none;border-radius:12px;padding:13px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 4px 13px rgba(34,197,94,.25)}
+.ai-accept-btn:active{transform:scale(.97)}
+.ai-reject-btn{border:none;border-radius:12px;padding:13px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:rgba(192,57,43,.09);border:1px solid rgba(192,57,43,.22);color:#c0392b}
+.ai-reject-btn:active{transform:scale(.97)}
+.ai-retry-acts{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.ai-retry-btn{border:none;border-radius:12px;padding:15px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;background:rgba(40,112,192,.1);border:1px solid rgba(40,112,192,.25);color:var(--a2);transition:.15s;text-align:left}
+.ai-retry-btn:active{background:rgba(40,112,192,.2);transform:scale(.97)}
+</style>
+</head>
+<body>
+
+<!-- ПОРУКА ЗА ПОРТРЕТ -->
+<div class="rotate-screen">
+  <div class="rot-icon">⟳</div>
+  <div class="rot-title">Молим Вас окрените таблет</div>
+  <div class="rot-sub">Господине председниче, молим Вас да таблет окренете водоравно како би апликација радила исправно</div>
+</div>
+
+<!-- ГЛАВНИ LAYOUT (само пејзаж) -->
+<div class="app-layout">
+
+  <!-- ═══ ЛИЈЕВИ ПАНЕЛ ═══ -->
+  <div class="split-left">
+
+    <!-- ХЕДЕР -->
+    <div class="hdr">
+      <div class="hdr-title">✦ Предсједников асистент за чување драгоцјених мисли</div>
+      <div class="hdr-meta">
+        <div class="pill pill-stats"><b id="sP">0</b>&nbsp;уноса&nbsp;·&nbsp;<b id="sW">0</b>&nbsp;рј.</div>
+        <div class="pill pill-drive sy" id="dPill"><div class="dot"></div><span id="dLbl">Учитавам...</span></div>
+      </div>
+      <div class="hdr-row2">
+        <div class="fs-grp">
+          <button class="fs-btn fs-minus" onclick="changeFS(-1)">А−</button>
+          <button class="fs-btn fs-plus"  onclick="changeFS(1)">А+</button>
+        </div>
+        <button class="icon-btn" onclick="openModal('setModal')">⚙️</button>
+      </div>
+    </div>
+
+    <!-- УНУТРАШЊОСТ -->
+    <div class="left-inner">
+      <div class="li-logo">✦</div>
+      <div class="li-cursor-card">
+        <div class="li-cursor-label">Мјесто уноса и читања</div>
+        <div class="li-cursor-val" id="liCurVal">Цијели текст</div>
+      </div>
+      <div class="li-hint">Тапните на мјесто у тексту —<br>одатле ће се уносити и читати.</div>
+    </div>
+
+    <!-- БОТ БАР -->
+    <div class="bot-bar">
+      <button class="bbt bbt-dik" id="dikBtn" onclick="toggleDikDrawer()">
+        <span class="bi">🎙️</span>ДИКТИРАЈ
+      </button>
+      <button class="bbt bbt-ai" onclick="openAiOv()">
+        <span class="bi">✦</span>АИ
+      </button>
+      <button class="bbt bbt-tts" onclick="openDrawer('ttsDrawer')">
+        <span class="bi">🔊</span>ЧИТАЈ
+      </button>
+      <button class="bbt bbt-more" onclick="openDrawer('moreDrawer')">
+        <span class="bi">⋯</span>ЈОШ
+      </button>
+    </div>
+
+    <!-- OVERLAY (апсолутно унутар панела) -->
+    <div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+    <!-- ДИКТАТ ФИОКА -->
+    <div class="drawer" id="dikDrawer">
+      <div class="drawer-handle"></div>
+      <div style="text-align:center;margin-bottom:10px">
+        <div class="mic-wrap" id="micWrap">
+          <div class="mic-ring r1"></div><div class="mic-ring r2"></div>
+          <button class="mic-btn" id="micBtn" onclick="toggleRec()">🎙️</button>
+        </div>
+        <div class="mic-status" id="micStat">Тапните микрофон за снимање</div>
+      </div>
+      <div class="trans-box empty" id="transBox">Ваш текст ће се појавити овдје...</div>
+      <div class="draw-acts">
+        <button class="dbtn dbtn-save" onclick="saveTranscript()">✍️ УПИШИ</button>
+        <button class="dbtn dbtn-del"  onclick="clearTrans()">✕ Обриши</button>
+      </div>
+      <button class="dbtn-note" onclick="saveAsNote()">
+        📝 Сачувај као брзу биљешку
+      </button>
+    </div>
+
+    <!-- АИ ФИОКА (не користи се — АИ иде преко оверлеја) -->
+    <div class="drawer" id="aiDrawer"></div>
+
+    <!-- TTS ФИОКА -->
+    <div class="drawer" id="ttsDrawer">
+      <div class="drawer-handle"></div>
+      <div class="drawer-title">🔊 Читај наглас</div>
+      <div class="tts-opts">
+        <button class="tts-opt sel" id="tts0" onclick="selTTS(0)">
+          <span class="t-ic">📚</span>Цијели текст од почетка
+        </button>
+        <button class="tts-opt" id="tts1" onclick="selTTS(1)">
+          <span class="t-ic">📍</span>Од мјеста гдје сам тапнуо
+        </button>
+        <button class="tts-opt" id="tts2" onclick="selTTS(2)">
+          <span class="t-ic">🔚</span>Задњих неколико реченица
+        </button>
+      </div>
+      <button class="tts-play" onclick="startTTS()">▶ ПОЧНИ ЧИТАТИ</button>
+    </div>
+
+    <!-- ЈОШ ФИОКА -->
+    <div class="drawer" id="moreDrawer">
+      <div class="drawer-handle"></div>
+      <div class="drawer-title">⋯ Још опција</div>
+      <div class="more-list">
+        <div class="more-item" onclick="viewNotes()"><span class="m-ic">📝</span>Брзе биљешке</div>
+        <div class="more-item" onclick="shareBook()"><span class="m-ic">📤</span>Подијели текст</div>
+        <div class="more-item" onclick="exportTxt()"><span class="m-ic">📄</span>Преузми као .txt</div>
+        <div class="more-item" onclick="closeAll();openModal('setModal')"><span class="m-ic">⚙️</span>Подешавања</div>
+      </div>
+    </div>
+
+  </div><!-- /split-left -->
+
+  <!-- ═══ ДЕСНИ ПАНЕЛ — ДОКУМЕНТ ═══ -->
+  <div class="doc-wrap" id="docWrap">
+    <div id="docView"><div class="doc-empty">Документ је празан — почните диктирати</div></div>
+  </div>
+
+</div><!-- /app-layout -->
+
+<!-- МОДАЛИ (фиксни, преко свега) -->
+<div class="modal-ov" id="setModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h2>Подешавања</h2>
+      <button class="cl-btn" onclick="closeModal('setModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cfgStatus"></div>
+      <div class="s-sec">Google Drive — Apps Script URL</div>
+      <div class="s-desc">Добијате при деплојевању скрипте на <a class="s-link" href="https://script.google.com" target="_blank">script.google.com</a></div>
+      <input class="s-inp" id="inSurl" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="s-sec">Gemini АИ кључ</div>
+      <div class="s-desc">Бесплатно на <a class="s-link" href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></div>
+      <input class="s-inp" id="inGkey" type="password" placeholder="АИ кључ...">
+      <button class="btn-full btn-purple" onclick="saveSettings()">💾 Сачувај и примијени</button>
+      <div class="divider"></div>
+      <div class="s-sec">ID документа за биљешке</div>
+      <div class="s-desc">Засебан Google Doc за брзе биљешке (опционо)</div>
+      <input class="s-inp" id="inNdoc" type="text" placeholder="1BxY...">
+      <button class="btn-full btn-subtle" onclick="saveNoteDocId()">💾 Сачувај ID биљешки</button>
+      <div class="divider"></div>
+      <button class="btn-full btn-subtle" onclick="exportTxt()">📄 Преузми текст као .txt</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="notesModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h2>Брзе биљешке</h2>
+      <button class="cl-btn" onclick="closeModal('notesModal')">✕</button>
+    </div>
+    <div class="modal-body" id="notesBody"></div>
+  </div>
+</div>
+
+<div class="tts-stop-bar" id="ttsStopBar">
+  <div class="tts-info"><div class="tts-dot"></div>Читам наглас...</div>
+  <button class="tts-stop-btn" onclick="stopTTS()">⏹ Заустави</button>
+</div>
+
+<!-- ══ АИ ОВЕРЛЕЈ ══ -->
+<div class="ai-ov" id="aiOv">
+  <div class="ai-ov-hdr">
+    <div class="ai-ov-title">✦ Уређивање са АИ</div>
+    <button class="cl-btn" onclick="closeAiOv()">✕</button>
+  </div>
+
+  <!-- КОРАК 1: одабери дио текста -->
+  <div class="ai-ov-step" id="aiStep1">
+    <div class="ai-ov-hint">Означите дио текста прстом, а затим тапните дугме испод</div>
+    <div class="ai-ov-selwrap">
+      <div id="aiOvDoc" class="ai-ov-doc"></div>
+    </div>
+    <div class="ai-ov-foot">
+      <button class="ai-confirm-btn" id="aiConfirmSel" onclick="confirmAiSelection()" disabled>
+        ✦ Потврди одабир
+      </button>
+    </div>
+  </div>
+
+  <!-- КОРАК 2: гласовна команда -->
+  <div class="ai-ov-step" id="aiStep2">
+    <div class="ai-ov-sel-preview">
+      <div class="ai-ov-sel-label">Одабрани текст</div>
+      <div class="ai-ov-sel-text" id="aiSelPreviewTxt"></div>
+    </div>
+    <div class="ai-question">Господине предсједниче, шта желите да урадим са овим текстом?</div>
+    <div class="ai-cmd-trans" id="aiCmdTrans">Говорите своју жељу...</div>
+    <div class="ai-ov-foot">
+      <button class="ai-mic-btn-big" id="aiCmdMicBtn" onclick="toggleAiRec()">🎙️ Говорите</button>
+      <button class="ai-send-btn" id="aiSendBtn" onclick="sendAiCommand()">Пошаљи АИ ✦</button>
+    </div>
+  </div>
+
+  <!-- КОРАК 3: резултат -->
+  <div class="ai-ov-step" id="aiStep3">
+    <div class="ai-ov-loading" id="aiOvLoad"><span class="spin">⚙️</span> АИ размишља...</div>
+    <div id="aiResWrap">
+      <div class="ai-ov-sel-label">АИ предлаже</div>
+      <div class="ai-result-box" id="aiResultBox"></div>
+      <div class="ai-res-acts">
+        <button class="ai-accept-btn" onclick="acceptAiResult()">✅ Прихвати</button>
+        <button class="ai-reject-btn" onclick="showAiRetry()">✕ Не свиђа ми се</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- КОРАК 4: понови или нова команда -->
+  <div class="ai-ov-step" id="aiStep4">
+    <div class="ai-question">Шта желите да урадимо?</div>
+    <div class="ai-retry-acts">
+      <button class="ai-retry-btn" onclick="retryAiSame()">🔄 Покушај опет уз исту команду</button>
+      <button class="ai-retry-btn" onclick="retryAiNew()">🎙️ Даћу ти нову команду</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ КОНФИГУРАЦИЈА ═══ */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxjhmpIGztlo-nX6vq9iTCXruWgq5iT_OqkbRn9lQrzF_UlWmQjulJYIC8PXCF_1FIEA/exec';
+const GEMINI_KEY = 'AQ.Ab8RN6JZ73Lv94weQY2-_YxQr1h_3UlF2W-ivIUA9-14OIKbkA';
+
+let SURL = localStorage.getItem('cfg_surl') || SCRIPT_URL;
+let GKEY = localStorage.getItem('cfg_gkey') || GEMINI_KEY;
+
+/* ═══ СТАЊЕ ═══ */
+let book          = [];
+let notes         = [];
+let cur           = '';
+let isRec         = false;
+let rec           = null;
+let ttsMode       = 0;
+let ttsCharPos    = -1;   // -1 = cijeli tekst; inace = mjesto unosa i citanja
+let noteDocId     = localStorage.getItem('cfg_ndocid') || '';
+let docFS         = parseInt(localStorage.getItem('doc_fs') || '18');
+let localModified = JSON.parse(localStorage.getItem('local_modified') || 'false');
+
+/* АИ оверлеј стање */
+let aiSelStart = -1, aiSelEnd = -1, aiSelText = '', aiCmdText = '', aiOvResult = '';
+let aiOvRec = null, isAiRec = false;
+
+/* ═══ TRANSLITERACIJA ═══ */
+function cyr(t) {
+  t = t.replace(/[Dd][Žž]/g,m=>m[0]==='D'?'Џ':'џ');
+  t = t.replace(/[Ll][Jj]/g,m=>m[0]==='L'?'Љ':'љ');
+  t = t.replace(/[Nn][Jj]/g,m=>m[0]==='N'?'Њ':'њ');
+  const m={'a':'а','b':'б','c':'ц','č':'ч','ć':'ћ','d':'д','đ':'ђ','e':'е','f':'ф','g':'г','h':'х','i':'и','j':'ј','k':'к','l':'л','m':'м','n':'н','o':'о','p':'п','r':'р','s':'с','š':'ш','t':'т','u':'у','v':'в','z':'з','ž':'ж','A':'А','B':'Б','C':'Ц','Č':'Ч','Ć':'Ћ','D':'Д','Đ':'Ђ','E':'Е','F':'Ф','G':'Г','H':'Х','I':'И','J':'Ј','K':'К','L':'Л','M':'М','N':'Н','O':'О','P':'П','R':'Р','S':'С','Š':'Ш','T':'Т','U':'У','V':'В','Z':'З','Ž':'Ж'};
+  return t.replace(/[a-zA-ZčćšžđČĆŠŽĐ]/g,c=>m[c]||c);
+}
+
+/* ═══ INIT ═══ */
+async function init() {
+  loadLocal();
+  applyFS();
+  renderDoc();
+  updateStats();
+  initSpeech();
+  await syncDrive();
+  prefillSettings();
+}
+
+/* ═══ FONT SIZE ═══ */
+function changeFS(d) {
+  docFS = Math.min(28,Math.max(13,docFS+d));
+  localStorage.setItem('doc_fs',docFS);
+  applyFS();
+}
+function applyFS() {
+  document.getElementById('docView').style.fontSize = docFS+'px';
+}
+
+/* ═══ DRIVE ═══ */
+function setDrive(state,lbl){
+  const p=document.getElementById('dPill');
+  p.className='pill pill-drive '+(state==='ok'?'':state);
+  document.getElementById('dLbl').textContent=lbl;
+}
+async function syncDrive() {
+  if(!SURL){setDrive('er','Drive није подешен');return;}
+  setDrive('sy','Синхронизујем...');
+  try {
+    const r=await fetch(SURL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'getAll'})});
+    const d=await r.json();
+    // Ne prepisuj lokalne izmjene (insertovanje, AI doradu) podacima s Drivea
+    if(d.ok&&Array.isArray(d.entries)&&d.entries.length>=book.length&&!localModified){
+      book=d.entries;localStorage.setItem('book_v3',JSON.stringify(book));renderDoc();updateStats();
+    }
+    setDrive('ok','Ажурирано на Drive');
+  } catch {setDrive('er','⚠ Нема вeze с Drive');}
+}
+async function saveToDrive(entry) {
+  if(!SURL)return;
+  try {
+    await fetch(SURL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',text:entry.text,timestamp:entry.timestamp})});
+    setDrive('ok','Ажурирано на Drive');
+  } catch {setDrive('er','⚠ Није сачувано на Drive');showToast('⚠️ Сачувано локално — нема Drive везе');}
+}
+
+/* ═══ LOCAL ═══ */
+function loadLocal(){
+  try{book=JSON.parse(localStorage.getItem('book_v3')||'[]');}catch{book=[];}
+  try{notes=JSON.parse(localStorage.getItem('notes_v1')||'[]');}catch{notes=[];}
+}
+function updateStats(){
+  const w=book.reduce((n,e)=>n+e.text.split(/\s+/).filter(Boolean).length,0);
+  document.getElementById('sP').textContent=book.length;
+  document.getElementById('sW').textContent=w;
+}
+
+/* ═══ FULL TEXT ═══ */
+function fullText(){return book.map(e=>e.text).join('\n\n');}
+
+/* ═══ RENDER DOCUMENT ═══ */
+function renderDoc() {
+  const dv=document.getElementById('docView');
+  const ft=fullText();
+  if(!ft.trim()){dv.innerHTML='<div class="doc-empty">Документ је празан — почните диктирати</div>';return;}
+
+  if(ttsCharPos<0||ttsCharPos>=ft.length){
+    dv.textContent=ft;
+  } else {
+    const before=ft.slice(0,ttsCharPos);
+    const after=ft.slice(ttsCharPos);
+    dv.innerHTML=esc(before)+'<span class="tts-cursor" id="ttsCur">▎</span>'+esc(after);
+    setTimeout(()=>document.getElementById('ttsCur')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50);
+  }
+  updateCursorInfo();
+}
+
+function updateCursorInfo(){
+  const el=document.getElementById('liCurVal');
+  if(!el)return;
+  if(ttsCharPos<0)el.textContent='Цијели текст';
+  else {
+    const ft=fullText();
+    const snippet=ft.slice(ttsCharPos,ttsCharPos+40).replace(/\n/g,' ').trim();
+    el.textContent='📍 „'+snippet+(snippet.length>=40?'...':'"');
+  }
+}
+
+/* ═══ TAP TO SET CURSOR (унос + читање) ═══ */
+document.addEventListener('DOMContentLoaded',()=>{
+  const dv=document.getElementById('docView');
+  dv.addEventListener('click',e=>{
+    const range=document.caretRangeFromPoint?document.caretRangeFromPoint(e.clientX,e.clientY):null;
+    if(!range)return;
+    ttsCharPos=getGlobalOffset(dv,range);
+    renderDoc();
+  });
+});
+
+function getGlobalOffset(container,range){
+  try{
+    const pre=range.cloneRange();
+    pre.selectNodeContents(container);
+    pre.setEnd(range.startContainer,range.startOffset);
+    return pre.toString().length;
+  }catch{return -1;}
+}
+
+/* ═══ SPEECH ═══ */
+function initSpeech(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){document.getElementById('micStat').textContent='⚠️ Отворите у Chrome';return;}
+  rec=new SR();rec.lang='sr-RS';rec.continuous=true;rec.interimResults=true;
+  rec.onresult=e=>{
+    let fin='',int='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)fin+=e.results[i][0].transcript;
+      else int+=e.results[i][0].transcript;
+    }
+    if(fin)cur+=(cur?' ':'')+fin.trim();
+    renderTrans(cyr(cur)+(int?' '+cyr(int):''));
+  };
+  rec.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;stopRec();};
+  rec.onend=()=>{if(isRec)try{rec.start();}catch{}};
+}
+function toggleRec(){isRec?stopRec():startRec();}
+function startRec(){
+  if(!rec)return;isRec=true;
+  document.getElementById('micBtn').classList.add('rec');document.getElementById('micBtn').textContent='⏹';
+  document.getElementById('micWrap').classList.add('rec');
+  document.getElementById('micStat').textContent='● Снимам — тапните за крај';
+  document.getElementById('micStat').classList.add('rec');
+  document.getElementById('dikBtn').classList.add('rec');
+  try{rec.start();}catch{}
+}
+function stopRec(){
+  isRec=false;if(rec)rec.stop();
+  document.getElementById('micBtn').classList.remove('rec');document.getElementById('micBtn').textContent='🎙️';
+  document.getElementById('micWrap').classList.remove('rec');
+  document.getElementById('micStat').textContent='Тапните микрофон за снимање';
+  document.getElementById('micStat').classList.remove('rec');
+  document.getElementById('dikBtn').classList.remove('rec');
+}
+function renderTrans(txt){
+  const b=document.getElementById('transBox');
+  if(txt&&txt.trim()){b.textContent=txt;b.classList.remove('empty');}
+  else{b.textContent='Ваш текст ће се појавити овдје...';b.classList.add('empty');}
+}
+function clearTrans(){cur='';renderTrans('');}
+
+/* ═══ SAVE ═══ */
+async function saveTranscript(){
+  const text=cyr(cur.trim());
+  if(!text){showToast('⚠️ Нема текста!');return;}
+  let entryToSave;
+  if(ttsCharPos>=0&&book.length>0){
+    // Umetni na poziciju kursora
+    const ft=fullText();
+    const before=ft.slice(0,ttsCharPos).trimEnd();
+    const after=ft.slice(ttsCharPos).trimStart();
+    const newFt=(before?(before+'\n\n'):'')+ text +(after?('\n\n'+after):'');
+    const newPos=before.length+(before?2:0)+text.length;
+    entryToSave={text:newFt.trim(),timestamp:new Date().toISOString()};
+    book=[entryToSave];
+    localModified=true;
+    localStorage.setItem('local_modified','true');
+    ttsCharPos=newPos;
+  } else {
+    entryToSave={text,timestamp:new Date().toISOString()};
+    book.push(entryToSave);
+  }
+  localStorage.setItem('book_v3',JSON.stringify(book));
+  updateStats();renderDoc();clearTrans();stopRec();
+  showToast('✅ Уписано!');
+  setDrive('sy','Чувам...');
+  await saveToDrive(entryToSave);
+}
+async function saveAsNote(){
+  const text=cyr(cur.trim());
+  if(!text){showToast('⚠️ Нема текста!');return;}
+  notes.push({text,timestamp:new Date().toISOString()});
+  localStorage.setItem('notes_v1',JSON.stringify(notes));
+  clearTrans();stopRec();showToast('📝 Биљешка сачувана!');
+}
+
+/* ═══ TTS ═══ */
+function selTTS(n){
+  ttsMode=n;
+  [0,1,2].forEach(i=>document.getElementById('tts'+i).classList.toggle('sel',i===n));
+}
+function startTTS(){
+  if(!book.length){showToast('Документ је празан!');return;}
+  const ft=fullText();
+  let text='';
+  if(ttsMode===0){text=ft;}
+  else if(ttsMode===1){
+    if(ttsCharPos<0||ttsCharPos>=ft.length)text=ft;
+    else text=ft.slice(ttsCharPos);
+  } else {
+    const words=ft.split(/\s+/);text=words.slice(-80).join(' ');
+  }
+  closeAll();speak(text);
+}
+function speak(text){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  function doSpeak(voices){
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=0.82;
+    // Tražimo srpski, pa hrvatski (skoro isti jezik, uvijek dostupan), pa bosanski
+    const tryLangs=['sr','hr','bs'];
+    let found=null;
+    for(const l of tryLangs){
+      found=voices.find(v=>v.lang.toLowerCase().startsWith(l));
+      if(found)break;
+    }
+    if(found){u.voice=found;u.lang=found.lang;}
+    else{u.lang='hr-HR';} // fallback ako nema nijednog
+    u.onstart=()=>document.getElementById('ttsStopBar').classList.add('on');
+    u.onend=u.onerror=()=>document.getElementById('ttsStopBar').classList.remove('on');
+    window.speechSynthesis.speak(u);
+  }
+  const voices=window.speechSynthesis.getVoices();
+  if(voices.length>0){doSpeak(voices);}
+  else{
+    // Na nekim uređajima glasovi se učitavaju async
+    window.speechSynthesis.onvoiceschanged=()=>{
+      window.speechSynthesis.onvoiceschanged=null;
+      doSpeak(window.speechSynthesis.getVoices());
+    };
+    setTimeout(()=>doSpeak(window.speechSynthesis.getVoices()),600);
+  }
+}
+function stopTTS(){
+  window.speechSynthesis.cancel();
+  document.getElementById('ttsStopBar').classList.remove('on');
+}
+
+/* ═══ АИ ОВЕРЛЕЈ ═══ */
+function showAiStep(n){
+  [1,2,3,4].forEach(i=>{
+    const el=document.getElementById('aiStep'+i);
+    el.classList.toggle('on',i===n);
+  });
+}
+
+function openAiOv(){
+  if(!book.length){showToast('Документ је празан!');return;}
+  closeAll();
+  const doc=document.getElementById('aiOvDoc');
+  doc.textContent=fullText();
+  doc.style.fontSize=docFS+'px';
+  aiSelStart=-1;aiSelEnd=-1;aiSelText='';aiCmdText='';aiOvResult='';
+  document.getElementById('aiConfirmSel').disabled=true;
+  showAiStep(1);
+  document.getElementById('aiOv').classList.add('on');
+  document.addEventListener('selectionchange',onAiSel);
+}
+
+function closeAiOv(){
+  document.getElementById('aiOv').classList.remove('on');
+  document.removeEventListener('selectionchange',onAiSel);
+  if(isAiRec)stopAiRec();
+}
+
+function onAiSel(){
+  const sel=window.getSelection();
+  const doc=document.getElementById('aiOvDoc');
+  if(!sel||!sel.rangeCount||!doc.contains(sel.anchorNode)){
+    document.getElementById('aiConfirmSel').disabled=true;return;
+  }
+  document.getElementById('aiConfirmSel').disabled=!sel.toString().trim();
+}
+
+function confirmAiSelection(){
+  const sel=window.getSelection();
+  const doc=document.getElementById('aiOvDoc');
+  if(!sel||!sel.rangeCount)return;
+  aiSelText=sel.toString().trim();
+  if(!aiSelText)return;
+  const range=sel.getRangeAt(0);
+  const pre=range.cloneRange();
+  pre.selectNodeContents(doc);
+  pre.setEnd(range.startContainer,range.startOffset);
+  aiSelStart=pre.toString().length;
+  aiSelEnd=aiSelStart+aiSelText.length;
+  sel.removeAllRanges();
+  document.removeEventListener('selectionchange',onAiSel);
+  document.getElementById('aiSelPreviewTxt').textContent=aiSelText;
+  const trans=document.getElementById('aiCmdTrans');
+  trans.textContent='Говорите своју жељу...';trans.classList.remove('active');
+  document.getElementById('aiSendBtn').style.display='none';
+  aiCmdText='';
+  showAiStep(2);
+  initAiRec();
+}
+
+function initAiRec(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('⚠️ Говор недоступан у овом прегледачу');return;}
+  if(aiOvRec)try{aiOvRec.abort();}catch{}
+  aiOvRec=new SR();aiOvRec.lang='sr-RS';aiOvRec.continuous=false;aiOvRec.interimResults=true;
+  aiOvRec.onresult=e=>{
+    let fin='',int='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)fin+=e.results[i][0].transcript;
+      else int+=e.results[i][0].transcript;
+    }
+    if(fin)aiCmdText+=(aiCmdText?' ':'')+fin.trim();
+    const disp=cyr(aiCmdText)+(int?' '+cyr(int):'');
+    const el=document.getElementById('aiCmdTrans');
+    el.textContent=disp||'Говорите своју жељу...';
+    el.classList.toggle('active',!!disp);
+    if(aiCmdText)document.getElementById('aiSendBtn').style.display='block';
+  };
+  aiOvRec.onend=()=>{isAiRec=false;const b=document.getElementById('aiCmdMicBtn');b.classList.remove('rec');b.textContent='🎙️ Говорите';};
+  aiOvRec.onerror=e=>{if(e.error!=='no-speech')stopAiRec();};
+}
+
+function toggleAiRec(){isAiRec?stopAiRec():startAiRec();}
+
+function startAiRec(){
+  if(!aiOvRec)initAiRec();
+  if(!aiOvRec)return;
+  isAiRec=true;
+  const b=document.getElementById('aiCmdMicBtn');b.classList.add('rec');b.textContent='⏹ Зауставите';
+  aiCmdText='';
+  const el=document.getElementById('aiCmdTrans');el.textContent='Слушам...';el.classList.remove('active');
+  document.getElementById('aiSendBtn').style.display='none';
+  try{aiOvRec.start();}catch{}
+}
+
+function stopAiRec(){
+  isAiRec=false;
+  if(aiOvRec)try{aiOvRec.stop();}catch{}
+  const b=document.getElementById('aiCmdMicBtn');b.classList.remove('rec');b.textContent='🎙️ Говорите';
+}
+
+async function sendAiCommand(){
+  if(!GKEY||GKEY.length<10){showToast('⚠️ Подесите Gemini кључ!');return;}
+  stopAiRec();
+  showAiStep(3);
+  const load=document.getElementById('aiOvLoad'),res=document.getElementById('aiResWrap');
+  load.classList.add('on');res.classList.remove('on');aiOvResult='';
+  const styleCtx=book.slice(-4).map(e=>e.text).join('\n\n');
+  const cmd=cyr(aiCmdText.trim())||'Дорадите текст у стилу аутора';
+  const prompt=`Ти си асистент за писање на српском ћирилицом.\n\n${styleCtx?`Стил аутора:\n"${styleCtx}"\n\n`:''}Одабрани текст:\n"${aiSelText}"\n\nЗахтјев: ${cmd}\n\nВрати САМО измијењени текст на српском ћирилицом, без икаквих коментара.`;
+  try{
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GKEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.75,maxOutputTokens:800}})});
+    const d=await r.json();
+    load.classList.remove('on');
+    if(d.error){showToast('❌ '+(d.error.message||'АИ грешка'));closeAiOv();return;}
+    aiOvResult=d.candidates?.[0]?.content?.parts?.[0]?.text?.trim()||'';
+    if(!aiOvResult){showToast('❌ АИ није вратио одговор.');closeAiOv();return;}
+    document.getElementById('aiResultBox').textContent=aiOvResult;
+    res.classList.add('on');
+  }catch{load.classList.remove('on');showToast('❌ Нема интернета или погрешан кључ.');closeAiOv();}
+}
+
+function acceptAiResult(){
+  if(!aiOvResult)return;
+  const ft=fullText();
+  const newFt=ft.slice(0,aiSelStart)+aiOvResult+ft.slice(aiSelEnd);
+  const entry={text:newFt.trim(),timestamp:new Date().toISOString()};
+  book=[entry];
+  localModified=true;localStorage.setItem('local_modified','true');
+  localStorage.setItem('book_v3',JSON.stringify(book));
+  ttsCharPos=aiSelStart+aiOvResult.length;
+  updateStats();renderDoc();
+  showToast('✅ АИ текст уписан!');
+  closeAiOv();
+  setDrive('sy','Чувам...');saveToDrive(entry);
+}
+
+function showAiRetry(){showAiStep(4);}
+
+function retryAiSame(){
+  showAiStep(3);
+  document.getElementById('aiOvLoad').classList.add('on');
+  document.getElementById('aiResWrap').classList.remove('on');
+  sendAiCommand();
+}
+
+function retryAiNew(){
+  aiCmdText='';
+  const el=document.getElementById('aiCmdTrans');
+  el.textContent='Говорите своју жељу...';el.classList.remove('active');
+  document.getElementById('aiSendBtn').style.display='none';
+  showAiStep(2);
+  initAiRec();
+}
+
+/* ═══ ДИЈЕЛИ / ИЗВОЗ ═══ */
+function shareBook(){
+  if(!book.length){showToast('Документ је празан!');return;}
+  const txt=fullText();
+  if(navigator.share)navigator.share({title:'Драгоцјене мисли',text:txt}).catch(()=>{});
+  else navigator.clipboard?.writeText(txt).then(()=>showToast('📋 Копирано!')).catch(()=>showToast('⚠️ Клипборд недоступан'));
+  closeAll();
+}
+function exportTxt(){
+  if(!book.length){showToast('Документ је празан!');return;}
+  const c=book.map((e,i)=>`── Унос ${i+1} (${new Date(e.timestamp).toLocaleDateString('sr-RS')}) ──\n${e.text}`).join('\n\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([c],{type:'text/plain;charset=utf-8'}));
+  a.download='dragocjene-misli.txt';a.click();closeAll();
+}
+
+/* ═══ БИЉЕШКЕ ═══ */
+function viewNotes(){
+  closeAll();
+  const body=document.getElementById('notesBody');
+  if(!notes.length){body.innerHTML='<div class="doc-empty">Нема биљешки.</div>';}
+  else{body.innerHTML=notes.map((n,i)=>`<div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.18);border-radius:11px;padding:11px;margin-bottom:9px;"><div style="font-size:10px;color:#8b88a8;margin-bottom:4px;">Биљешка ${i+1} · ${new Date(n.timestamp).toLocaleDateString('sr-RS')}</div><div style="font-size:14px;line-height:1.7;">${esc(n.text)}</div></div>`).join('');}
+  openModal('notesModal');
+}
+function saveNoteDocId(){noteDocId=document.getElementById('inNdoc').value.trim();localStorage.setItem('cfg_ndocid',noteDocId);showToast('✅ Сачувано!');}
+
+/* ═══ ПОДЕШАВАЊА ═══ */
+function prefillSettings(){
+  document.getElementById('inSurl').value=SURL||'';
+  document.getElementById('inGkey').value=GKEY||'';
+  document.getElementById('inNdoc').value=noteDocId;
+  const ok=SURL&&SURL.includes('script.google.com')&&GKEY&&GKEY.length>10;
+  document.getElementById('cfgStatus').innerHTML=ok?'<div class="cfg-ok">✅ Апликација је потпуно подешена.</div>':'<div class="cfg-warn">⚠️ Потребно је подесити Script URL и Gemini кључ.</div>';
+}
+function saveSettings(){
+  const su=document.getElementById('inSurl').value.trim();
+  const gk=document.getElementById('inGkey').value.trim();
+  if(!su||!gk){showToast('⚠️ Унесите оба поља!');return;}
+  SURL=su;GKEY=gk;
+  localStorage.setItem('cfg_surl',su);localStorage.setItem('cfg_gkey',gk);
+  showToast('✅ Подешавања сачувана!');closeModal('setModal');syncDrive();
+}
+
+/* ═══ DRAWERS & MODALS ═══ */
+function openDrawer(id){
+  closeAll(false);
+  document.getElementById('overlay').classList.add('on');
+  document.getElementById(id).classList.add('on');
+}
+function toggleDikDrawer(){
+  const d=document.getElementById('dikDrawer');
+  if(d.classList.contains('on'))closeAll();
+  else openDrawer('dikDrawer');
+}
+function closeAll(cr=true){
+  document.getElementById('overlay').classList.remove('on');
+  ['dikDrawer','aiDrawer','ttsDrawer','moreDrawer'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  if(cr&&isRec)stopRec();
+}
+function openModal(id){if(id==='setModal')prefillSettings();document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+
+/* ═══ UTILS ═══ */
+let toastT;
+function showToast(msg,ms=2800){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),ms);
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+
+/* START */
+init();
+</script>
+</body>
+</html>
