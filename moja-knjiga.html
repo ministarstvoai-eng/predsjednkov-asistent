@@ -75,7 +75,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;b
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(40,112,192,.25);border-radius:3px}
 .doc-empty{text-align:center;padding:4rem 1rem;color:rgba(139,136,168,.3);font-style:italic;line-height:1.8}
 #docView{font-family:'Playfair Display',serif;line-height:1.85;color:var(--txt);white-space:pre-wrap;word-break:break-word;cursor:text;padding-bottom:40px;position:relative}
-.tts-cursor{display:inline;color:var(--a1);font-weight:900;animation:blink-cur 1.1s ease-in-out infinite;font-style:normal;font-size:1.1em;line-height:1;vertical-align:text-bottom;user-select:none}
+.tts-cursor{display:inline-block;width:2px;height:1em;background:var(--a1);border-radius:1px;vertical-align:text-bottom;animation:blink-cur 1.1s ease-in-out infinite;user-select:none;margin:0 1px}
 @keyframes blink-cur{0%,100%{opacity:1}50%{opacity:0}}
 .tts-cursor-line{position:absolute;top:0;left:0;right:0;height:1.5px;background:rgba(40,112,192,.4);pointer-events:none}
 
@@ -109,6 +109,9 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;b
 .dbtn-del{background:rgba(40,112,192,.08);border:1px solid var(--brd);color:var(--sub)}
 .dbtn-note{background:rgba(245,200,66,.09);border:1px solid rgba(245,200,66,.22);color:#f5c842;width:100%;border-radius:11px;padding:10px 14px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s}
 .dbtn-note:active{background:rgba(245,200,66,.18)}
+.punct-bar{display:flex;gap:5px;margin-bottom:8px}
+.punct-btn{flex:1;background:rgba(40,112,192,.1);border:1px solid rgba(40,112,192,.25);border-radius:8px;padding:8px 4px;font-size:15px;font-weight:700;color:var(--a2);cursor:pointer;font-family:'Inter',sans-serif;transition:.15s}
+.punct-btn:active{background:rgba(40,112,192,.28);transform:scale(.9)}
 
 /* AI */
 .ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
@@ -281,6 +284,13 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;b
         <div class="mic-status" id="micStat">Тапните микрофон за снимање</div>
       </div>
       <div class="trans-box empty" id="transBox">Ваш текст ће се појавити овдје...</div>
+      <div class="punct-bar">
+        <button class="punct-btn" onclick="addPunct('. ')">.</button>
+        <button class="punct-btn" onclick="addPunct(', ')">,</button>
+        <button class="punct-btn" onclick="addPunct('! ')">!</button>
+        <button class="punct-btn" onclick="addPunct('? ')">?</button>
+        <button class="punct-btn" onclick="addPunct('\n')">↵</button>
+      </div>
       <div class="draw-acts">
         <button class="dbtn dbtn-save" onclick="saveTranscript()">✍️ УПИШИ</button>
         <button class="dbtn dbtn-del"  onclick="clearTrans()">✕ Обриши</button>
@@ -457,6 +467,26 @@ let localModified = JSON.parse(localStorage.getItem('local_modified') || 'false'
 let aiSelStart = -1, aiSelEnd = -1, aiSelText = '', aiCmdText = '', aiOvResult = '';
 let aiOvRec = null, isAiRec = false;
 
+/* ═══ GLASOVNA INTERPUNKCIJA ═══ */
+function applyVoicePunct(t){
+  // Predsjednik može reći "tačka", "zarez" itd. — prevodimo u znakove
+  return t
+    .replace(/\b(tačka|tacka|точка)\b\.?\s*/gi,'. ')
+    .replace(/\b(zarez|запета)\b,?\s*/gi,', ')
+    .replace(/\b(uzvičnik|uzvicnik|uskličnik)\b!?\s*/gi,'! ')
+    .replace(/\b(upitnik)\b\??\s*/gi,'? ')
+    .replace(/\b(dvotačka|dvotacka)\b:?\s*/gi,': ')
+    .replace(/\b(nova linija|novi red)\b\s*/gi,'\n')
+    .replace(/\b(novi pasus|novi paragraf)\b\s*/gi,'\n\n')
+    // Kapitalizuj prvu slovo poslije tačke/!/? ako nije već
+    .replace(/([.!?]\s+)([a-zа-ш])/g,(m,p,c)=>p+c.toUpperCase())
+    .trim();
+}
+function addPunct(p){
+  cur=cur.trimEnd()+p;
+  renderTrans(cyr(cur));
+}
+
 /* ═══ TRANSLITERACIJA ═══ */
 function cyr(t) {
   t = t.replace(/[Dd][Žž]/g,m=>m[0]==='D'?'Џ':'џ');
@@ -539,7 +569,7 @@ function renderDoc() {
   } else {
     const before=ft.slice(0,ttsCharPos);
     const after=ft.slice(ttsCharPos);
-    dv.innerHTML=esc(before)+'<span class="tts-cursor" id="ttsCur">▎</span>'+esc(after);
+    dv.innerHTML=esc(before)+'<span class="tts-cursor" id="ttsCur"></span>'+esc(after);
     setTimeout(()=>document.getElementById('ttsCur')?.scrollIntoView({block:'nearest',behavior:'smooth'}),50);
   }
   updateCursorInfo();
@@ -587,7 +617,7 @@ function initSpeech(){
       if(e.results[i].isFinal)fin+=e.results[i][0].transcript;
       else int+=e.results[i][0].transcript;
     }
-    if(fin)cur+=(cur?' ':'')+fin.trim();
+    if(fin)cur+=(cur?' ':'')+applyVoicePunct(fin.trim());
     renderTrans(cyr(cur)+(int?' '+cyr(int):''));
   };
   rec.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;stopRec();};
