@@ -170,7 +170,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;b
 .cl-btn:active{background:rgba(239,68,68,.14);color:var(--red)}
 
 /* Toast */
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:rgba(212,232,245,.97);border:1px solid var(--brd);color:var(--txt);padding:9px 18px;border-radius:24px;font-size:13.5px;font-weight:500;z-index:100;opacity:0;pointer-events:none;transition:.22s;white-space:nowrap;backdrop-filter:blur(20px);box-shadow:0 4px 18px rgba(40,112,192,.2)}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:rgba(212,232,245,.97);border:1px solid var(--brd);color:var(--txt);padding:9px 18px;border-radius:24px;font-size:13.5px;font-weight:500;z-index:200;opacity:0;pointer-events:none;transition:.22s;white-space:normal;max-width:85vw;text-align:center;backdrop-filter:blur(20px);box-shadow:0 4px 18px rgba(40,112,192,.2)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ══ АИ ОВЕРЛЕЈ ══ */
@@ -590,10 +590,15 @@ function updateCursorInfo(){
 document.addEventListener('DOMContentLoaded',()=>{
   const dv=document.getElementById('docView');
   dv.addEventListener('click',e=>{
+    // Privremeno uklonimo kursor span da tekst bude u prirodnom položaju,
+    // inače span pomjera slova i caretRangeFromPoint daje pogrešnu poziciju
+    const ft=fullText();
+    if(!ft.trim())return;
+    dv.textContent=ft; // čisti tekst, bez spanova
     const range=document.caretRangeFromPoint?document.caretRangeFromPoint(e.clientX,e.clientY):null;
-    if(!range)return;
+    if(!range){renderDoc();return;}
     ttsCharPos=getGlobalOffset(dv,range);
-    renderDoc();
+    renderDoc(); // sve ovo je sinhroono, browser slika samo krajnji rezultat
   });
 });
 
@@ -849,12 +854,12 @@ async function sendAiCommand(){
     const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GKEY}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.75,maxOutputTokens:800}})});
     const d=await r.json();
     load.classList.remove('on');
-    if(d.error){showToast('❌ '+(d.error.message||'АИ грешка'));closeAiOv();return;}
+    if(d.error){showToast('❌ '+(d.error.message||'АИ грешка'),7000);closeAiOv();return;}
     aiOvResult=d.candidates?.[0]?.content?.parts?.[0]?.text?.trim()||'';
-    if(!aiOvResult){showToast('❌ АИ није вратио одговор.');closeAiOv();return;}
+    if(!aiOvResult){showToast('❌ АИ није вратио одговор.',7000);closeAiOv();return;}
     document.getElementById('aiResultBox').textContent=aiOvResult;
     res.classList.add('on');
-  }catch{load.classList.remove('on');showToast('❌ Нема интернета или погрешан кључ.');closeAiOv();}
+  }catch(err){load.classList.remove('on');showToast('❌ '+(err.message||'Нема интернета или погрешан кључ.'),7000);closeAiOv();}
 }
 
 function acceptAiResult(){
